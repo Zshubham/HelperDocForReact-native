@@ -1,0 +1,629 @@
+import AsyncStorage from '@react-native-community/async-storage';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  Text,
+  TouchableOpacity,
+  View,
+  ScrollView,
+  TextInput,
+  Animated,
+  Dimensions,
+  TouchableWithoutFeedback,
+  Keyboard,
+  ActivityIndicator,
+} from 'react-native';
+import { NavigationScreenProp } from '@react-navigation/native';
+import { AppRoutes } from '../NavigatorContainer';
+import SignUpStyles from '../SignUp/SignUpStyles';
+import { Constant, callToast, closeToast } from '../../strings/Constants';
+import {  useDispatch } from 'react-redux';
+import {Register, Login, VerifyEmail, ReSendCode} from '../actions';
+
+import APIRequest, {
+  apiBaseUrl,
+  profileurl,
+  privacy,
+  termsandconditions,
+} from '../../strings/ApiCalls';
+import { theme } from '../../theme/theme';
+import { colors } from '../../theme/colors';
+import { useUIElements } from '../providers/UIElementsProvider';
+import { LocalStrings } from '../../strings/LocalStrings';
+import WebView from 'react-native-webview';
+import DeviceInfo from 'react-native-device-info';
+import { exceptionCrashlytic } from '../Commons/DeviceRequests';
+const styles = SignUpStyles;
+const window = Dimensions.get('window');
+export const IMAGE_HEIGHT = window.height / 10;
+export const IMAGE_WIDTH = window.width / 3;
+let imageHeight = new Animated.Value(IMAGE_HEIGHT);
+let keyboardHeight = new Animated.Value(0);
+
+export interface OnboardingProps extends NavigationScreenProp {
+  navigation: any;
+}
+export const SignUpFormScreen: React.FC<OnboardingProps> = props => {
+  const dispatch = useDispatch();
+
+  const [firstName, setFirstName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [cpassword, setCpassword] = useState<string>('');
+  const [code , setCode] = useState<string>('');
+  const [disable1 , setdisable1] = useState<boolean>(false);
+  const {
+    uniqueDeviceId,
+    setCBottomShow,
+    setLoading,
+    setAppProfilePic,
+    setAppProfileEmail,
+    setAppProfileName,
+    setAppfamiliesMembers,
+    message,
+    setMessage,
+    fail, 
+    setFail,
+    title,
+    setTitle,
+  } = useUIElements();
+  const [successShow, setSuccessShow] = useState<boolean>(false);
+  const ref_input2 = useRef<any>(null);
+  const ref_input3 = useRef<any>(null);
+  const ref_input4 = useRef<any>(null);
+  const [checked, setchecked] = useState<boolean>(false);
+  const [privacyShow, setprivacyShow] = useState<boolean>(false);
+  const [tcsShow, settcsShow] = useState<boolean>(false);
+  useEffect(() => {
+    setLoading(false);
+    APIRequest.fireLog('Begin_Registeration','SignUpFormScreen','')
+
+  }, []);
+  const _setFirstName = (value: string) => {
+    if (/^[a-zA-Z'’ ]*$/.test(value)) {
+      setFirstName(value);
+    } else {
+      return false;
+    }
+  };
+  const commonMeassge = (message, title) => {
+    callToast();
+    setTitle(title);
+    setFail(true);
+    setLoading(false);
+    setMessage(message);
+    setTimeout(() => {
+      closeToast();
+      setFail(false);
+    }, 2000);
+  };
+  const redneroptionalformEmail = () => {
+    return (
+      <>
+        <View>
+          <Text allowFontScaling={false} style={[styles.commonTextBlue, { marginLeft: 20, marginTop: 20}]}>
+            {'Name'}
+          </Text>
+          <View style={[styles.SectionStyle, {}]}>
+            <TextInput
+              style={[styles.commonInput, { color: 'black', left: 0, marginRight: 30, marginLeft: 20 }]}
+              keyboardType="email-address"
+              underlineColorAndroid="transparent"
+              placeholderTextColor="rgb(115, 118, 131)"
+              value={firstName}
+              returnKeyType={'next'}
+              onSubmitEditing={() => ref_input2.current.focus()}
+              onChangeText={value => {
+                _setFirstName(value);
+              }}
+              blurOnSubmit={false}
+            />
+          </View>
+          <Text allowFontScaling={false} style={[styles.commonTextBlue, { marginLeft: 20, marginTop: 20}]}>
+            {LocalStrings.Signup.email}
+          </Text>
+          <View style={[styles.SectionStyle]}>
+            <TextInput
+              style={[styles.commonInput, { color: 'black', left: 0, marginRight: 30, marginLeft: 20 }]}
+              keyboardType="email-address"
+              underlineColorAndroid="transparent"
+              placeholderTextColor="rgb(115, 118, 131)"
+              value={email}
+              blurOnSubmit={false}
+              ref={ref_input2}
+              onChangeText={value => setEmail(value)}
+              returnKeyType={'next'}
+              onSubmitEditing={() => Keyboard.dismiss()}
+            />
+          </View>
+          <Text allowFontScaling={false} style={[styles.commonTextBlue, { marginLeft: 20, marginTop: 20}]}>
+            {LocalStrings.Signup.password}
+          </Text>
+          <View style={[styles.SectionStyle]}>
+            <TextInput
+              style={[styles.commonInput, { color: 'black', left: 0, marginRight: 30, marginLeft: 20 }]}
+              keyboardType="default"
+              secureTextEntry={true}
+              underlineColorAndroid="transparent"
+              placeholderTextColor="rgb(115, 118, 131)"
+              value={password}
+              maxLength={15}
+              ref={ref_input3}
+              blurOnSubmit={false}
+              returnKeyType={'next'}
+              onSubmitEditing={() => Keyboard.dismiss()}
+              onChangeText={value => {
+                setPassword(value);
+              }}
+            />
+          </View>
+          <Text allowFontScaling={false} style={[styles.commonTextBlue, { marginLeft: 20, marginTop: 20}]}>
+            {LocalStrings.Signup.cpass}
+          </Text>
+          <View style={[styles.SectionStyle]}>
+            <TextInput
+              style={[styles.commonInput, { color: 'black', left: 0, marginRight: 30, marginLeft:20 }]}
+              keyboardType="default"
+              maxLength={15}
+              underlineColorAndroid="transparent"
+              secureTextEntry={true}
+              placeholderTextColor="rgb(115, 118, 131)"
+              value={cpassword}
+              ref={ref_input4}
+              blurOnSubmit={false}
+              returnKeyType={'next'}
+              onChangeText={value => {
+                setCpassword(value);
+              }}
+            />
+          </View>
+        </View>
+        <View
+          style={{
+            flexDirection: 'row',
+            marginHorizontal: 20,
+            marginLeft: 40,
+            margin: Platform.OS === 'ios' ? 10 : 10,
+          }}>
+          {checked ? (
+            <TouchableOpacity
+              onPress={() => {
+                setchecked(!checked);
+              }}>
+              <Image
+                source={require('../../ui/icons/checked.png')}
+                style={{
+                  width: 20,
+                  height: 20,
+                  alignItems: 'center',
+                  alignSelf: 'center',
+                  justifyContent: 'center',
+                  top: 5,
+                }}
+              />
+            </TouchableOpacity>
+          ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  setchecked(!checked);
+                }}>
+                <Image
+                  source={require('../../ui/icons/unchecked.png')}
+                  style={{
+                    width: 20,
+                    height: 20,
+                    alignItems: 'center',
+                    alignSelf: 'center',
+                    justifyContent: 'center',
+                    top: 5,
+                  }}
+                />
+              </TouchableOpacity>
+            )}
+          <View style={{ width: '100%', left: 10 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                marginRight: 30,
+                marginLeft: 20
+              }}>
+              <Text numberOfLines={2}>
+                <Text
+                  style={{ ...theme.fonts.SFProTextMedium(16), color: colors.FONT_MIDNIGHT_BLUE }}>
+                  {' '}
+                  I agree to the Medmate{' '}
+                </Text> 
+                <Text
+                  style={{
+                    textDecorationLine: 'underline',
+                    color: colors.BUTTON_BG,
+                    ...theme.fonts.SFProTextMedium(16),
+                  }}
+                  onPress={() => {
+                    settcsShow(true);
+                  }}>
+                  Terms and Conditions
+                </Text>
+                <Text
+                  style={{
+                    textDecorationLine: 'underline',
+                    color: 'white',
+                    ...theme.fonts.SFProTextMedium(16),
+                  }}
+                  onPress={() => {
+                    setprivacyShow(true);
+                  }}>
+                  {' '}
+                  Privacy Policy
+                </Text>
+              </Text>
+            </View>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={[styles.loginButton,{}]}
+          onPress={() => {
+            APIRequest.netWorkCheck()
+              .fetch()
+              .then(result => {
+                console.log(result.isConnected, 'result');
+                if (result.isConnected) {
+                  if (
+                    firstName.length === 0 ||
+                    email.length === 0 ||
+                    password.length === 0 ||
+                    cpassword.length === 0
+                  ) {
+                    commonMeassge(
+                      'Please provide the required information',
+                      'red',
+                    );
+                  } else if (Constant.reg.test(email) === false) {
+                    commonMeassge('Email address invalid', 'red');
+                   } else if (password.length < 7) {
+                    commonMeassge(
+                      'Password should be more than 6 characters',
+                      'red',
+                    );
+                  } else if (password !== cpassword) {
+                    commonMeassge('Passwords are not matched', 'red');
+                  } else if (checked === false) {
+                    commonMeassge('Please tick the checkbox', 'red');
+                  } else {
+                    userRegistration();
+                  }
+                } else {
+                  setCBottomShow(true);
+                  callToast();
+                  setTimeout(() => {
+                    setCBottomShow(false);
+                  }, 2000);
+                }
+              });
+          }}>
+          <Text allowFontScaling={false} style={styles.getbutton}>
+            Create Account
+          </Text>
+        </TouchableOpacity>
+        <View style={{ height: 30 }} />
+      </>
+    );
+  };
+
+  const userRegistration = async() => {
+ 
+    var loginData = {
+      username: email,
+      password: password,
+    };
+
+    var registerData = {
+      username: email,
+      password: password,
+      c_password: cpassword,
+      firstname: firstName,
+      lastname: '',
+      dob: '',
+      device_id: uniqueDeviceId,
+      accept_terms: checked ? 1 : 0,
+    };
+    dispatch(Register(loginData,registerData,
+      (item)=>setLoading(item),
+       (item)=>setAppProfilePic(profileurl + item),
+        (item)=>setAppProfileName(item),
+        (item)=>setAppProfileEmail(item),
+        (item)=> setAppfamiliesMembers(item),
+        () =>  setSuccessShow(true),
+        (one,two)=> commonMeassge(one,two),
+         (item)=> setFail(item)
+        )) 
+  };
+
+  const onSucess=()=>{
+    dispatch(Login({
+              username: email,
+              password: password,
+            },
+              (item)=>setLoading(item),
+               (item)=>setAppProfilePic(profileurl + item),
+                (item)=>setAppProfileName(item), 
+                (item)=>setAppProfileEmail(item),
+                (item)=> setAppfamiliesMembers(item),
+                ()=>props.navigation.navigate(AppRoutes.TabBar, {
+                  secondtime: 'newaddress'
+                }),
+                (one,two)=> commonMeassge(one,two),
+                 (item)=> setFail(item)
+                ))
+}
+
+  const onPressVerify=()=>{
+      dispatch(VerifyEmail({
+        username: email,
+        code : code,
+      },
+      () => onSucess(),
+        (item)=>setLoading(item),
+          (one,two)=> commonMeassge(one,two),
+          ))           
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.WHITE }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : null}
+        style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }}>
+          <View
+            style={{
+              backgroundColor: colors.WHITE,
+              height: 50,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+            <View style={{ flex: 1, paddingLeft: 10 }}>
+              <TouchableOpacity 
+                onPress={() => {
+                  // if (successShow) {
+                   
+                  // } else if (tcsShow || privacyShow) {
+                  //   setprivacyShow(false);
+                  //   settcsShow(false);
+                  // } else {
+                  //   props.navigation.push(AppRoutes.LoginSample);
+                  // }
+                  props.navigation.popToTop();
+                }}
+                style={{ width: 25, height: 25 }}>
+                {tcsShow || privacyShow ? (
+                  <Image
+                    source={require('../../ui/icons/close_icon.png')}
+                    style={{ width: 40, height: 40, top: -10 }}
+                  />
+                ) : (
+                    <Image
+                      source={require('../../ui/icons/secondaryBack.png')}
+                      style={{ width: 20, height: 15}}
+                    />
+                  )}
+              </TouchableOpacity>
+            </View>
+            {
+             <View style={{}}>            
+              {              
+              successShow ? (
+                <Text
+                  allowFontScaling={false}
+                  style={{
+                    color: 'white',
+                    ...theme.fonts.SFProTextBold(16),
+                    textAlign: 'center',
+                  }}>
+                  {successShow ? 'CONFIRMATION' : 'SIGN UP'}
+                </Text>
+              ) : null }
+            </View>}
+            <View style={{ flex: 1, paddingRight: 10 }} />
+          </View>
+          {successShow ? (
+            <ScrollView style={{ margin: 10 }} showsVerticalScrollIndicator={false}>
+              <View style={{ justifyContent: 'center', alignItems: 'center' }}>
+                <Image
+                  source={require('../../ui/icons/orderplace.jpg')}
+                  style={{resizeMode: 'contain',
+                  height: 50,
+                  width: 50,}}
+                />
+                <Image
+                  source={require('../../ui/icons/top_logo.png')}
+                  style={{ height: IMAGE_HEIGHT,
+                    width: IMAGE_WIDTH,
+                    resizeMode: 'contain',
+                    alignSelf: 'center',
+                    marginBottom: 30,
+                    padding: 10,
+                  }}
+                />
+              </View>
+              <Text allowFontScaling={false} style={[styles.commonTextData,{alignSelf: 'center',marginLeft: 20, marginTop: 20}]}>
+                {LocalStrings.Signup.thanks}
+              </Text>
+              
+              <Text allowFontScaling={false} style={[styles.commonTextBlue, { marginLeft: 20, marginTop: 20}]}>
+                {'Enter code'}
+              </Text>
+              <View style={[styles.SectionStyle]}>
+                <TextInput
+                  style={[styles.commonInput, { color: 'black', left: 0, marginRight: 30, marginLeft: 20 }]}
+                  keyboardType="email-address"
+                  underlineColorAndroid="transparent"
+                  placeholderTextColor="rgb(115, 118, 131)"
+                  value={code}
+                  blurOnSubmit={false}
+                  ref={ref_input2}
+                  onChangeText={value => setCode(value)}
+                  returnKeyType={'next'}
+                  onSubmitEditing={() => Keyboard.dismiss()}
+                />
+              </View>
+              <View
+                style={{
+                  justifyContent: 'flex-end',
+                  marginBottom: 36,
+                  top: 40,
+                }}>
+                {/* <TouchableOpacity
+                  onPress={() => {
+                    setSuccessShow(false);
+                    props.navigation.navigate(AppRoutes.NewProfile);
+                  }}
+                  style={{ margin: 20 }}>
+                  <Text
+                    allowFontScaling={false}
+                    style={{
+                      ...theme.fonts.SFProTextRegular(14),
+                      color: colors.BLACK_COLOR,
+                      textDecorationLine: 'underline',
+                      textAlign: 'center',
+                    }}>
+                    {LocalStrings.Signup.complete}
+                  </Text>
+                </TouchableOpacity> */}
+                <TouchableOpacity
+                  onPress={() => {
+                    if(code.length){
+                      onPressVerify()
+                    }
+                    else{
+                      commonMeassge('Insert code','red')
+                    }
+                  }}
+                  style={{
+                    marginBottom: 30,
+                    backgroundColor: colors.BUTTON_BG,
+                    borderRadius: 100,
+                    width:'50%', 
+                    alignSelf: 'center',
+                  }}>
+                  <Text
+                    allowFontScaling={false}
+                    style={{
+                      ...theme.fonts.SFProTextRegular(14),
+                      color: colors.WHITE,
+                      textAlign: 'center',
+                      padding: Platform.OS === 'ios' ? 16 : 10,
+                    }}>
+                    {'Verify'}
+                  </Text>
+                </TouchableOpacity>
+
+{disable1 ? null : (
+                <TouchableOpacity
+                disabled={disable1}
+                  onPress={() => {
+                    setCode('')
+                    dispatch(ReSendCode({
+                      username: email,
+                    },
+                      (item)=>setLoading(item),
+                        (one,two)=> commonMeassge(one,two),
+                        )),
+                        setdisable1(true)
+                 }}
+                  style={{
+                    marginBottom: 30,
+                    backgroundColor: colors.BUTTON_BG,
+                    borderRadius: 100,
+                    width:'50%', 
+                    alignSelf: 'center',
+                  }}>
+                  <Text
+                    allowFontScaling={false}
+                    style={{
+                      ...theme.fonts.SFProTextRegular(14),
+                      color: colors.WHITE,
+                      textAlign: 'center',
+                      padding: Platform.OS === 'ios' ? 16 : 10,
+                    }}>
+                    {'Re-Send Code'}
+                  </Text>
+                </TouchableOpacity>
+)}
+
+                {/* <Text allowFontScaling={false} style={styles.commonTextData}>
+                  {LocalStrings.Signup.exdata}
+                </Text>
+                <Text allowFontScaling={false} style={styles.commonTextData}>
+                  {LocalStrings.Signup.pharmacydata}
+                </Text> */}
+              </View>
+            </ScrollView>
+          ) : tcsShow || privacyShow ? (
+            <WebView
+              source={{ uri: tcsShow ? termsandconditions : privacy }}
+              originWhitelist={['*']}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <ActivityIndicator
+                  color={colors.BUTTON_BG}
+                  size="large"
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'white',
+                    alignSelf: 'center',
+                    justifyContent: 'center',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 10,
+                    elevation: 1000,
+                  }}
+                />
+              )}
+            />
+          ) : (
+                <ScrollView bounces={false} style={{ flex: 1 }}>
+                  <TouchableWithoutFeedback
+                    style={{ flex: 1 }}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                    }}>
+                    <Animated.View style={[styles.container, { paddingBottom: keyboardHeight }]}>
+                            <Animated.Image source={require('../../ui/icons/medmate_logo_blue.png')} style={[{
+                                height: IMAGE_HEIGHT,
+                                width : IMAGE_WIDTH,
+                                resizeMode: "contain",
+                                alignSelf: "center",
+                                marginBottom: 50,
+                                padding: 10,
+                                marginTop: 20,                            
+                            }, { height: imageHeight }]} />                          
+                      <View style={{ }}>                      
+                        <Text
+                          style={{
+                            ...theme.fonts.SFProTextBold(24),
+                            color: colors.FONT_MIDNIGHT_BLUE,
+                            lineHeight: 25,
+                            margin: 30,
+                            left: 10                        
+                          }}>
+                          Create Your Account
+                    </Text>
+                      </View>
+                      {redneroptionalformEmail()}                                 
+                    </Animated.View>   
+                  </TouchableWithoutFeedback>
+                </ScrollView>
+              )}
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+    </View>
+  );
+};
